@@ -1,0 +1,10 @@
+D:\VoiceProcessing\VoiceRecording\UnityTestMicrophone\WebClientForAzure\WebClientForAzure\bin\Debug\WebClientForAzure.dll
+D:\VoiceProcessing\VoiceRecording\UnityTestMicrophone\WebClientForAzure\WebClientForAzure\bin\Debug\WebClientForAzure.pdb
+D:\VoiceProcessing\VoiceRecording\UnityTestMicrophone\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.csprojResolveAssemblyReference.cache
+D:\VoiceProcessing\VoiceRecording\UnityTestMicrophone\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.dll
+D:\VoiceProcessing\VoiceRecording\UnityTestMicrophone\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.pdb
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\bin\Debug\WebClientForAzure.dll
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\bin\Debug\WebClientForAzure.pdb
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.csprojResolveAssemblyReference.cache
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.dll
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\obj\Debug\WebClientForAzure.pdb
