@@ -1,0 +1,1 @@
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientSample\bin\Release\WebClientSample.exe.config

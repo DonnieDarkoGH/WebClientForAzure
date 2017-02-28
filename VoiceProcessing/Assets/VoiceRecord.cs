@@ -6,6 +6,8 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 public class VoiceRecord : MonoBehaviour {
 
+    public int Duration = 35;
+
     AudioSource     audioSourceRef;
     AudioListener   audioListenerRef;
     string      microName;
@@ -54,7 +56,7 @@ public class VoiceRecord : MonoBehaviour {
         {
             if (!Microphone.IsRecording(microName))
             {
-                VoiceClip = Microphone.Start(microName, true, 5, 16000);
+                VoiceClip = Microphone.Start(microName, true, Duration, 16000);
                 audioSourceRef.clip = VoiceClip;
 
             }

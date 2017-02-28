@@ -1,0 +1,4 @@
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\bin\Release\WebClientForAzure.dll
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\bin\Release\WebClientForAzure.pdb
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\obj\Release\WebClientForAzure.dll
+D:\VoiceProcessing\WebClientForAzure\WebClientForAzure\WebClientForAzure\obj\Release\WebClientForAzure.pdb
