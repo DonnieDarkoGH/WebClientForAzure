@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Text;
+﻿using System.Text;
 using UnityEngine;
-using UnityEngine.Networking;
 
 
 namespace AzureServiceManagement {
@@ -24,7 +22,26 @@ namespace AzureServiceManagement {
             // Request body
             byte[] byteData = Encoding.UTF8.GetBytes("{\n\"locale\":\"en-us\",\n}");
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, byteData);
+            requestConfig = new RequestConfig(HttpMethod.POST, url, typeof(DataProfile), byteData);
+
+            OnRequestDone(requestConfig);
+        }
+
+        /// <summary>
+        /// Enrollment for speaker identification is text-independent, which means that there are no restrictions on what the speaker says in the audio. 
+        /// The speaker's voice is recorded, and a number of features are extracted to form a unique voiceprint.
+        /// </summary>
+        public static void CreateEnrollment() {
+            Debug.Log("<b>ServiceProfilesManager</b> CreateEnrollment");
+
+            // Request parameters
+            /*queryString["shortAudio"] = "{boolean}";
+            var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles/{identificationProfileId}/enroll?" + queryString;
+
+            // Request body
+            byte[] byteData = Encoding.UTF8.GetBytes("{body}");
+
+            requestConfig = new RequestConfig(HttpMethod.POST, url, byteData);*/
 
             OnRequestDone(requestConfig);
         }
@@ -37,7 +54,7 @@ namespace AzureServiceManagement {
 
             string url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles";
 
-            requestConfig = new RequestConfig(HttpMethod.GET, url);
+            requestConfig = new RequestConfig(HttpMethod.GET, url, typeof(DataProfileArray));
 
             OnRequestDone(requestConfig);
         }
@@ -51,7 +68,7 @@ namespace AzureServiceManagement {
 
             string url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles/" + identificationProfileId + "?";
 
-            requestConfig = new RequestConfig(HttpMethod.GET, url);
+            requestConfig = new RequestConfig(HttpMethod.GET, url, typeof(DataProfile));
 
             OnRequestDone(requestConfig);
         }
@@ -65,7 +82,24 @@ namespace AzureServiceManagement {
 
             var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles/" + identificationProfileId + "?";
 
-            requestConfig = new RequestConfig(HttpMethod.DELETE, url);
+            requestConfig = new RequestConfig(HttpMethod.DELETE, url, typeof(DataProfile));
+
+            OnRequestDone(requestConfig);
+        }
+
+        /// <summary>
+        /// Deletes all enrollments associated with the given speaker identification profile permanently from the service.
+        /// </summary>
+        /// <param name="identificationProfileId">ID of speaker identification profile. GUID returned from Identification Profile - Create Profile API</param>
+        public static void ResetEnrollments(string identificationProfileId) {
+            Debug.Log("<b>ServiceProfilesManager</b> ResetEnrollments : " + identificationProfileId);
+
+            var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles/" + identificationProfileId + "/reset?";
+
+            // Request body
+            byte[] byteData = Encoding.UTF8.GetBytes("{body}");
+
+            requestConfig = new RequestConfig(HttpMethod.DELETE, url, typeof(DataProfile), byteData);
 
             OnRequestDone(requestConfig);
         }

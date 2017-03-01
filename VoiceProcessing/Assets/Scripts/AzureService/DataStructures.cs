@@ -41,11 +41,13 @@ namespace AzureServiceManagement {
         internal string Method;
         internal string Url;
         internal byte[] Data;
+        internal System.Type JsonToObjectType;
 
-        internal RequestConfig(string method, string url, byte[] data = null) {
+        internal RequestConfig(string method, string url, System.Type jsonToObjectType, byte[] data = null) {
             this.Method = method;
             this.Url    = url;
             this.Data   = data;
+            this.JsonToObjectType = jsonToObjectType;
         }
 
         public override string ToString() {
@@ -60,48 +62,16 @@ namespace AzureServiceManagement {
         }
     }
 
-    [System.Serializable]
-    internal class ProfileList {
+    internal abstract class JsonToObject : object {
 
-        public List<ProfileController> Profiles = new List<ProfileController>();
-
-        internal ProfileController GetProfileById(string id) {
-
-            int len = Profiles.Count;
-
-            for (int i = 0; i < len; i++)
-            {
-                if (Profiles[i].IdentificationProfileId == id)
-                {
-                    return Profiles[i];
-                }
-            }
-
-            Debug.LogError("No profile correspond to " + id);
-
-            return null;
-        }
-
-        internal ProfileController GetProfileByName(string name) {
-
-            int len = Profiles.Count;
-
-            for (int i = 0; i < len; i++)
-            {
-                if (Profiles[i].ProfileName == name)
-                {
-                    return Profiles[i];
-                }
-            }
-
-            Debug.LogError("No profile correspond to " + name);
-
-            return null;
+        public static JsonToObject CreateFromJSON(string jsonString) {
+            return JsonUtility.FromJson<JsonToObject>(jsonString);
         }
     }
 
     [System.Serializable]
-    internal class DataProfile {
+    internal class DataProfile : JsonToObject {
+        public string name                    = string.Empty;
         public string identificationProfileId = string.Empty;
         public string locale                  = string.Empty;
         public float  enrollmentSpeechTime          = 0f;
@@ -110,7 +80,12 @@ namespace AzureServiceManagement {
         public string lastActionDateTime    = string.Empty;
         public string enrollmentStatus      = string.Empty;
 
-        public static DataProfile CreateFromJSON(string jsonString) {
+        internal DataProfile(string profileName, string id) {
+            name                    = profileName;
+            identificationProfileId = id;
+        }
+
+        public static new DataProfile CreateFromJSON(string jsonString) {
             return JsonUtility.FromJson<DataProfile>(jsonString);
         }
 
@@ -132,16 +107,16 @@ namespace AzureServiceManagement {
     }
 
     [System.Serializable]
-    internal class JsonProfileInterface {
+    internal class DataProfileArray : JsonToObject {
 
         public DataProfile[] DataProfiles;
 
-        public static JsonProfileInterface CreateFromJSON(string jsonString) {
+        public static new DataProfileArray CreateFromJSON(string jsonString) {
 
             string newJson = "{ \"DataProfiles\": " + jsonString + "}";
-            Debug.Log(newJson);
+            //Debug.Log(newJson);
 
-            return JsonUtility.FromJson<JsonProfileInterface>(newJson);
+            return JsonUtility.FromJson<DataProfileArray>(newJson);
         }
 
         public override string ToString() {
