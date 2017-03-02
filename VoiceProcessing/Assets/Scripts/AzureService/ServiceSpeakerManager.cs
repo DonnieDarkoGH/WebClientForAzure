@@ -17,9 +17,10 @@ namespace AzureServiceManagement {
         internal static void GetOperationStatus(string operationId) {
             Debug.Log("<b>SpeakerManager</b> GetOperationStatus");
 
-            string url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/operations/" + operationId + "?";
+            //string url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/operations/" + operationId + "?";
+            string url = operationId;
 
-            requestConfig = new RequestConfig(HttpMethod.GET, url, typeof(DataProfile));
+            requestConfig = new RequestConfig(HttpMethod.GET, url, EServerOperation.GetOperationStatus);
 
             OnRequestDone(requestConfig);
         }
@@ -32,17 +33,17 @@ namespace AzureServiceManagement {
         /// It can only support at most 10 profiles for one identification request.</param>
         /// <param name="shortAudio">Instruct the service to waive the recommended minimum audio limit needed for identification. 
         /// Set value to “true” to force identification using any audio length (min. 1 second).</param>
-        public static void Identification(string identificationProfileIds, bool shortAudio = false) {
+        public static void Identification(string identificationProfileIds, byte[] audioBytes, bool shortAudio = false) {
             Debug.Log("<b>SpeakerManager</b> Identification : " + identificationProfileIds + " (short audio : " + shortAudio +")");
 
             // Request parameters
-            var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identify?identificationProfileIds=" + identificationProfileIds + "&" + shortAudio;
+            var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identify?identificationProfileIds=" + identificationProfileIds + "&shortAudio=" + shortAudio;
 
             // Request body
             //byte[] byteData = Encoding.UTF8.GetBytes("{body}");
-            byte[] byteData = SavWav.DataBytes;
+            VoiceRecord.StreamAudio();
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, typeof(DataProfile), byteData);
+            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.Identification, VoiceRecord.fileBytes);
 
             OnRequestDone(requestConfig);
         }
@@ -59,7 +60,7 @@ namespace AzureServiceManagement {
             // Request body
             byte[] byteData = Encoding.UTF8.GetBytes("{body}");
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, typeof(DataProfile), byteData);
+            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.Verification, byteData);
 
             OnRequestDone(requestConfig);
         }

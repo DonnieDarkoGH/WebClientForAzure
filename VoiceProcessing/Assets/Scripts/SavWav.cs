@@ -229,13 +229,5 @@ public static class SavWav {
         }
 
         return byteArray;
-
-        /*Byte[] byteArray = new Byte[riff.Length + chunkSize.Length + wave.Length + fmt.Length + subChunk1.Length + audioFormat.Length + numChannels.Length + sampleRate.Length + byteRate.Length + alignByte.Length + bitsPerSample.Length + datastring.Length + subChunk2.Length];
-        riff.CopyTo(byteArray,0);
-        chunkSize.CopyTo(byteArray, riff.Length);
-        wave.CopyTo(byteArray, chunkSize.Length);
-        fmt.CopyTo(byteArray)*/
-
-        //		fileStream.Close();
     }
 }

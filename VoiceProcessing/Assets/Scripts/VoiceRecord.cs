@@ -1,20 +1,28 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.UI;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using AzureServiceManagement;
 
 public class VoiceRecord : MonoBehaviour {
 
-    public int Duration = 35;
+    public static byte[] fileBytes;
+
+    public float Duration = 35;
 
     AudioSource     audioSourceRef;
     AudioListener   audioListenerRef;
     string      microName;
     string      path = @"c:\temp\MyTest.dat";
+    float       recordingTimer = 0.0f;
+
+    [SerializeField] ProfilesManager profilesManagerRef = null;
 
     [SerializeField] bool       isRecording = false;
+    [SerializeField] bool       isEnrolling = false;
     [SerializeField] AudioClip  VoiceClip   = null;
+    [SerializeField] Image      StartBtnImage = null;
+    [SerializeField] Text       TimerDisplay = null;
+
     [SerializeField]
     Object testObj = null;
 
@@ -31,7 +39,6 @@ public class VoiceRecord : MonoBehaviour {
         audioListenerRef = GetComponent<AudioListener>();
         Debug.Log(AudioSettings.GetConfiguration().speakerMode);
 
-
         audioSourceRef = GetComponent<AudioSource>();
 
         int minFreq = 0;
@@ -46,27 +53,36 @@ public class VoiceRecord : MonoBehaviour {
 
         Debug.Log(AudioSettings.outputSampleRate + ", " + AudioSettings.speakerMode);
 
-
     }
 
     private void Update() {
-        isRecording = Microphone.IsRecording(microName);
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if(recordingTimer <= 0)
+        {
+            StopRecord();
+        }
+
+        if (isRecording)
         {
             if (!Microphone.IsRecording(microName))
             {
-                VoiceClip = Microphone.Start(microName, true, Duration, 16000);
+                Debug.Log("Start recording with : " + microName);
+                VoiceClip = Microphone.Start(microName, true, (int)Duration, 16000);
                 audioSourceRef.clip = VoiceClip;
-
             }
-            else
-            {
-                Microphone.End(microName);
-                //SaveFile(audioSourceRef.clip);
-                SavWav.Save("Buffer", audioSourceRef.clip);
-            }
+            recordingTimer -= Time.deltaTime;
+            TimerDisplay.text = recordingTimer + " sec";
         }
+        else if (Microphone.IsRecording(microName))
+        {
+            Debug.Log("Stop MICRO : " + microName);
+            Microphone.End(microName);
+            //SaveFile(audioSourceRef.clip);
+            SavWav.Save("Resources/Buffer", audioSourceRef.clip);
+
+            StreamAudio();
+        }
+  
 
         if (Input.GetKeyDown(KeyCode.P))
         {
@@ -80,8 +96,9 @@ public class VoiceRecord : MonoBehaviour {
 
 #if UNITY_EDITOR
         UnityEditor.AssetDatabase.AddObjectToAsset(clip, UnityEditor.AssetDatabase.GetAssetPath(this) + @"Assets/buffer.wav");
-#endif
         UnityEditor.AssetDatabase.SaveAssets();
+#endif
+
 
         if (!File.Exists(path))
         {
@@ -99,6 +116,61 @@ public class VoiceRecord : MonoBehaviour {
                 bw.Write(clip);
             }
         }
+    }
+
+    internal static void StreamAudio() {
+        Debug.Log("<b>VoiceRecord</b> StreamAudio");
+
+        string filePath = Application.dataPath + @"/Resources/buffer.wav";
+
+        FileStream stream = File.OpenRead(filePath);
+        Debug.Log(stream.Length);
+        fileBytes = new byte[stream.Length];
+
+        stream.Read(fileBytes, 0, fileBytes.Length);
+        stream.Close();
+
+        //Debug.Log(fileBytes.Length);
+
+        //for(int i = 0; i <100; i++)
+        //{
+        //    Debug.Log(fileBytes[i].ToString() + "\n");
+        //}
+        //Debug.Log(System.Text.Encoding.UTF8.GetString(fileBytes, 0, fileBytes.Length));
+
+    }
+
+    public void CreateEnrollment() {
+
+        StartBtnImage.color = Color.green;
+        isRecording    = true;
+        isEnrolling    = true;
+
+        Duration = 35.0f;
+        recordingTimer = Duration;
+    }
+
+
+    public void StartRecord() {
+
+        StartBtnImage.color = Color.green;
+        isRecording = true;
+        Duration = 5.0f;
+        recordingTimer = Duration;
+    }
+
+    public void StopRecord() {
+
+        StartBtnImage.color = Color.white;
+        isRecording = false;
+        if (isEnrolling)
+        {
+            isEnrolling = false;
+            string profileId = profilesManagerRef.GetFirstProfileId();
+
+            WebClientManager.Instance.CreateEnrollment(profileId);
+        }
+        
     }
 
 

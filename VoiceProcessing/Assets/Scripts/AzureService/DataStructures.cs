@@ -1,8 +1,18 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
+﻿using System.Text;
 
 namespace AzureServiceManagement {
+
+    internal enum EServerOperation {
+        CreateProfile       = 0,
+        CreateEnrollment    = 1,
+        GetAllProfiles      = 2,
+        GetProfile          = 3,
+        DeleteProfile       = 4,
+        ResetEnrollments    = 5,
+        GetOperationStatus  = 6,
+        Identification      = 7,
+        Verification        = 8
+    }
 
     internal static class HttpMethod {
 
@@ -41,13 +51,13 @@ namespace AzureServiceManagement {
         internal string Method;
         internal string Url;
         internal byte[] Data;
-        internal System.Type JsonToObjectType;
+        internal EServerOperation ServerOperation;
 
-        internal RequestConfig(string method, string url, System.Type jsonToObjectType, byte[] data = null) {
+        internal RequestConfig(string method, string url, EServerOperation serverOperation, byte[] data = null) {
             this.Method = method;
             this.Url    = url;
             this.Data   = data;
-            this.JsonToObjectType = jsonToObjectType;
+            this.ServerOperation = serverOperation;
         }
 
         public override string ToString() {
@@ -59,83 +69,6 @@ namespace AzureServiceManagement {
             }
 
             return returnValue;
-        }
-    }
-
-    internal abstract class JsonToObject : object {
-
-        public static JsonToObject CreateFromJSON(string jsonString) {
-            return JsonUtility.FromJson<JsonToObject>(jsonString);
-        }
-    }
-
-    [System.Serializable]
-    internal class DataProfile : JsonToObject {
-        public string name                    = string.Empty;
-        public string identificationProfileId = string.Empty;
-        public string locale                  = string.Empty;
-        public float  enrollmentSpeechTime          = 0f;
-        public float  remainingEnrollmentSpeechTime = 0f;
-        public string createdDateTime       = string.Empty;
-        public string lastActionDateTime    = string.Empty;
-        public string enrollmentStatus      = string.Empty;
-
-        internal DataProfile(string profileName, string id) {
-            name                    = profileName;
-            identificationProfileId = id;
-        }
-
-        public static new DataProfile CreateFromJSON(string jsonString) {
-            return JsonUtility.FromJson<DataProfile>(jsonString);
-        }
-
-        public override string ToString() {
-
-            string str = string.Empty;
-
-            str += "IdentificationProfileId : " + identificationProfileId + "\n";
-            str += "Locale : "                  + locale + "\n";
-            str += "EnrollmentSpeechTime : "    + enrollmentSpeechTime + "\n";
-            str += "RemainingEnrollmentSpeechTime : " + remainingEnrollmentSpeechTime + "\n";
-            str += "CreatedDateTime : "     + createdDateTime + "\n";
-            str += "LastActionDateTime : "  + lastActionDateTime + "\n";
-            str += "EnrollmentStatus : "    + enrollmentStatus + "\n";
-            str += "*********************************************************************\n";
-
-            return str;
-        }
-    }
-
-    [System.Serializable]
-    internal class DataProfileArray : JsonToObject {
-
-        public DataProfile[] DataProfiles;
-
-        public static new DataProfileArray CreateFromJSON(string jsonString) {
-
-            string newJson = "{ \"DataProfiles\": " + jsonString + "}";
-            //Debug.Log(newJson);
-
-            return JsonUtility.FromJson<DataProfileArray>(newJson);
-        }
-
-        public override string ToString() {
-            string str = string.Empty;
-
-            int len = DataProfiles.Length;
-            for (int i = 0; i < len; i++)
-            {
-                str += "IdentificationProfileId : " + DataProfiles[i].identificationProfileId + "\n";
-                str += "Locale : "                  + DataProfiles[i].locale + "\n";
-                str += "EnrollmentSpeechTime : "    + DataProfiles[i].enrollmentSpeechTime + "\n";
-                str += "RemainingEnrollmentSpeechTime : " + DataProfiles[i].remainingEnrollmentSpeechTime + "\n";
-                str += "CreatedDateTime : "         + DataProfiles[i].createdDateTime + "\n";
-                str += "LastActionDateTime : "      + DataProfiles[i].lastActionDateTime + "\n";
-                str += "EnrollmentStatus : "        + DataProfiles[i].enrollmentStatus + "\n";
-                str += "*********************************************************************\n";
-            }
-
-            return str;
         }
     }
 

@@ -6,6 +6,8 @@ using AzureServiceManagement;
 [System.Serializable]
 public class ProfileController : MonoBehaviour {
 
+    public enum EStatus { None, Identified}
+
     [SerializeField]
     internal string IdentificationProfileId = string.Empty;
 
@@ -16,6 +18,8 @@ public class ProfileController : MonoBehaviour {
     [SerializeField] private Image  background;
     [SerializeField] private Text   profileName;
     [SerializeField] private Text   profileId;
+
+    private float timerStatus = 0.0f;
 
     private void Awake() {
 
@@ -32,6 +36,20 @@ public class ProfileController : MonoBehaviour {
             profileName = GetComponentsInChildren<Text>()[2];
     }
 
+    private void Update() {
+
+        if (timerStatus > 0.0f)
+        {
+            background.color = Color.green;
+            timerStatus     -= Time.deltaTime;
+        }
+        else
+        {
+            timerStatus = 0.0f;
+            background.color = Color.white;
+        }
+    }
+
     internal void Init(DataProfile dataFromJsonObject) {
         IdentificationProfileId = dataFromJsonObject.identificationProfileId;
         profileId.text          = IdentificationProfileId;
@@ -40,5 +58,12 @@ public class ProfileController : MonoBehaviour {
 
     internal void SetIdFromJson(DataProfile dataFromJsonObject) {
         IdentificationProfileId = dataFromJsonObject.identificationProfileId;
+    }
+
+    internal void SetVisibleStatus(ProfileController.EStatus status) {
+
+        if (status == EStatus.Identified)
+            timerStatus = 5.0f;
+
     }
 }

@@ -25,6 +25,8 @@ public class ProfilesManager : MonoBehaviour {
         WebClientManager.OnProfileListModified  += PopulateProfiles;
         WebClientManager.OnProfileCreated       += CreateNewProfile;
 
+        WebClientManager.OnIdentificationDone   += DisplayIdentifiedSpeaker;
+
     }
 
     private void ClearChildren() {
@@ -39,8 +41,8 @@ public class ProfilesManager : MonoBehaviour {
 
     }
 
-    private void PopulateProfiles(RequestConfig requestConfig, string json) {
-        Debug.Log("<b>ServiceProfilesManager</b> PopulateProfiles with request :\n" + requestConfig.ToString() + "\n and Json : " + json );
+    private void PopulateProfiles(string json) {
+        Debug.Log("<b>ServiceProfilesManager</b> PopulateProfiles with Json : " + json );
 
         ClearChildren();
 
@@ -48,7 +50,6 @@ public class ProfilesManager : MonoBehaviour {
         Debug.Log(profileArray.ToString());
 
         int len = profileArray.DataProfiles.Length;
-        Debug.Log(len);
         //Profiles = new List<ProfileController>(len);
         Debug.Log(Profiles.Count);
 
@@ -70,13 +71,14 @@ public class ProfilesManager : MonoBehaviour {
 
     internal ProfileController GetProfileById(string id) {
 
-        int len = Profiles.Count;
+        ProfileController[] children = GetComponentsInChildren<ProfileController>();
+        int len = children.Length;
 
         for (int i = 0; i < len; i++)
         {
-            if (Profiles[i].IdentificationProfileId == id)
+            if (children[i].IdentificationProfileId == id)
             {
-                return Profiles[i];
+                return children[i];
             }
         }
 
@@ -114,6 +116,21 @@ public class ProfilesManager : MonoBehaviour {
 
     }
 
+    public void GetProfile() {
+
+        Toggle[] children = GetComponentsInChildren<Toggle>();
+
+        int len = children.Length;
+        for (int i = 0; i < len; i++)
+        {
+            if (children[i].isOn)
+            {
+                string id = children[i].GetComponent<ProfileController>().IdentificationProfileId;
+                WebClientManager.Instance.GetProfile(id);
+            }
+        }
+    }
+
     public void DeleteProfiles() {
 
         Toggle[] children = GetComponentsInChildren<Toggle>();
@@ -148,5 +165,26 @@ public class ProfilesManager : MonoBehaviour {
         }
 
         return csvList;
+    }
+
+    internal string GetFirstProfileId() {
+
+        Toggle[] children = GetComponentsInChildren<Toggle>();
+        int len = children.Length;
+
+        for (int i = 0; i < len; i++)
+        {
+            if (children[i].isOn)
+            {
+                return children[i].GetComponent<ProfileController>().IdentificationProfileId;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private void DisplayIdentifiedSpeaker(string speakerId) {
+
+        GetProfileById(speakerId).SetVisibleStatus(ProfileController.EStatus.Identified);
     }
 }
