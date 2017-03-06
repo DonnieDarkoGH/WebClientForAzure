@@ -22,7 +22,7 @@ namespace AzureServiceManagement {
             // Request body
             byte[] byteData = Encoding.UTF8.GetBytes("{\n\"locale\":\"en-us\",\n}");
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.CreateEnrollment, byteData);
+            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.CreateProfile, byteData);
 
             OnRequestDone(requestConfig);
         }
@@ -31,12 +31,13 @@ namespace AzureServiceManagement {
         /// Enrollment for speaker identification is text-independent, which means that there are no restrictions on what the speaker says in the audio. 
         /// The speaker's voice is recorded, and a number of features are extracted to form a unique voiceprint.
         /// </summary>
-        public static void CreateEnrollment(string identificationProfileId, bool shortAudio = false) {
+        public static void CreateEnrollment(string identificationProfileId, bool shortAudio = true) {
             Debug.Log("<b>ServiceProfilesManager</b> CreateEnrollment");
 
             // Request parameters
             //queryString["shortAudio"] = "{boolean}";
             var url = "https://westus.api.cognitive.microsoft.com/spid/v1.0/identificationProfiles/"+ identificationProfileId + "/enroll?" + "&shortAudio=" + shortAudio;
+            Debug.Log(url);
 
             // Request body
             //byte[] byteData = Encoding.UTF8.GetBytes("{body}");

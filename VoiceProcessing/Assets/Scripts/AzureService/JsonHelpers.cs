@@ -67,7 +67,7 @@ namespace AzureServiceManagement {
         }
     }
 
-        [System.Serializable]
+    [System.Serializable]
     internal class DataProfile : JsonToObject {
         public string name = string.Empty;
         public string identificationProfileId = string.Empty;

@@ -8,16 +8,18 @@ public class ProfileController : MonoBehaviour {
 
     public enum EStatus { None, Identified}
 
+    internal static System.Action<ProfileController> OnProfileRenamed;
+
     [SerializeField]
     internal string IdentificationProfileId = string.Empty;
 
     [SerializeField]
     internal string ProfileName             = string.Empty;
 
-    [SerializeField] private Toggle toggle;
-    [SerializeField] private Image  background;
-    [SerializeField] private Text   profileName;
-    [SerializeField] private Text   profileId;
+    [SerializeField] private Toggle     toggle;
+    [SerializeField] private Image      background;
+    [SerializeField] private InputField fieldName;
+    [SerializeField] private Text       fieldId;
 
     private float timerStatus = 0.0f;
 
@@ -29,11 +31,11 @@ public class ProfileController : MonoBehaviour {
         if (background == null)
             background = GetComponentsInChildren<Image>()[2];
 
-        if (profileId == null)
-            profileId = GetComponentsInChildren<Text>()[0];
+        if (fieldId == null)
+            fieldId = GetComponentsInChildren<Text>()[0];
 
-        if (profileName == null)
-            profileName = GetComponentsInChildren<Text>()[2];
+        if (fieldName == null)
+            fieldName = GetComponentsInChildren<InputField>()[0];
     }
 
     private void Update() {
@@ -52,18 +54,31 @@ public class ProfileController : MonoBehaviour {
 
     internal void Init(DataProfile dataFromJsonObject) {
         IdentificationProfileId = dataFromJsonObject.identificationProfileId;
-        profileId.text          = IdentificationProfileId;
-
+        fieldId.text            = IdentificationProfileId;
     }
 
     internal void SetIdFromJson(DataProfile dataFromJsonObject) {
         IdentificationProfileId = dataFromJsonObject.identificationProfileId;
     }
 
+
     internal void SetVisibleStatus(ProfileController.EStatus status) {
 
         if (status == EStatus.Identified)
             timerStatus = 5.0f;
+    }
 
+    internal void SetName(string name) {
+        Debug.Log("<b>ProfileController</b> SetName to " + name);
+
+        ProfileName    = name;
+        fieldName.text = name;
+    }
+
+    public void RenameProfile() {
+        Debug.Log("<b>ProfileController</b> RenameProfile to " + fieldName.text);
+
+        ProfileName = fieldName.text;
+        OnProfileRenamed(this);
     }
 }

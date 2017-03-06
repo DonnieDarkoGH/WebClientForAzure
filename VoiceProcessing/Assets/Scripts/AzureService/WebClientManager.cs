@@ -11,9 +11,9 @@ namespace AzureServiceManagement{
 
         internal static WebClientManager Instance;
 
-        internal static System.Action<string>                OnProfileListModified;
-        internal static System.Action<RequestConfig, string> OnProfileCreated;
-        internal static System.Action<string>                OnIdentificationDone;
+        internal static System.Action<string> OnProfileListModified;
+        internal static System.Action<string> OnProfileCreated;
+        internal static System.Action<string> OnIdentificationDone;
 
         [SerializeField]
         private Text TextResult = null;
@@ -23,9 +23,6 @@ namespace AzureServiceManagement{
 
         [SerializeField]
         private string _currentProfileId = "2de27537-13d4-465a-bb70-9c1b9156ef1c";
-
-        [SerializeField]
-        internal List<DataProfile> _profiles = new List<DataProfile>(0);
 
         [SerializeField]
         private ProfilesManager profilesManagerRef = null;
@@ -65,7 +62,7 @@ namespace AzureServiceManagement{
             ServiceProfilesManager.CreateProfile();
         }
 
-        public void CreateEnrollment(string profileID, bool shortAudio = false) {
+        public void CreateEnrollment(string profileID, bool shortAudio = true) {
             Debug.Log("<b>WebClientManager</b> CreateProfile ");
 
             if(profileID == string.Empty)
@@ -124,13 +121,6 @@ namespace AzureServiceManagement{
         }
 
 
-        //private void InitHttpRequest(string method, string url, byte[] byteData = null) {
-        //    Debug.Log("<b>WebClientManager</b> InitHttpRequest " + method + " : " + url);
-
-        //    StartCoroutine(DoRequest(method,url));
-
-        //}
-
         private void InitHttpRequest(RequestConfig requestConfig) {
             Debug.Log("<b>WebClientManager</b> InitHttpRequest " + requestConfig.ToString());
 
@@ -181,13 +171,7 @@ namespace AzureServiceManagement{
         private void ProcessResponse(UnityWebRequest request, EServerOperation serverOperation) {
             Debug.Log("<b>WebClientManager</b> ProcessResponse " + serverOperation);
 
-
-            //foreach(var s in request.GetResponseHeaders())
-            //{
-            //    Debug.Log(s.Key + ", " + s.Value);
-            //}
             string json = request.downloadHandler.text;
-
 
             switch (serverOperation)
             {
@@ -195,6 +179,8 @@ namespace AzureServiceManagement{
                     break;
 
                 case EServerOperation.CreateProfile:
+                    DataProfile creationResult = DataProfile.CreateFromJSON(json);
+                    OnProfileCreated(creationResult.identificationProfileId);
                     GetAllProfiles();
                     break;
 
@@ -212,15 +198,14 @@ namespace AzureServiceManagement{
                 case EServerOperation.GetOperationStatus:
                     //StartCoroutine(WaitForIdentification(request));
 
-                    DataRequest dr = DataRequest.CreateFromJSON(json);
-                    Debug.Log(dr.ToString());
-                    if((dr.status != "succeeded" && dr.status != "failed"))
+                    DataRequest GetOpResult = DataRequest.CreateFromJSON(json);
+                    if((GetOpResult.status != "succeeded" && GetOpResult.status != "failed"))
                     {
                         ServiceSpeakerManager.GetOperationStatus(opLocation);
                     }
                     else
                     {
-                        OnIdentificationDone(dr.processingResult.identifiedProfileId);
+                        OnIdentificationDone(GetOpResult.processingResult.identifiedProfileId);
                         opLocation = string.Empty;
                     }
                     break;
@@ -264,7 +249,7 @@ namespace AzureServiceManagement{
         IEnumerator WaitForIdentification(UnityWebRequest request) {
 
             DataRequest dr = DataRequest.CreateFromJSON(request.downloadHandler.text);
-            Debug.Log(dr.ToString());
+            //Debug.Log(dr.ToString());
             
             do
             {

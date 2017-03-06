@@ -6,14 +6,11 @@ using AzureServiceManagement;
 
 public class ProfilesManager : MonoBehaviour {
 
-    [SerializeField]
-    private ProfileController profileControllerPrefab = null;
+    [SerializeField] private  ProfileController       profileControllerPrefab = null;
 
-    [SerializeField]
-    private InputField inputFieldRef = null;
+    [SerializeField] private  InputField              inputFieldRef           = null;
 
-    [SerializeField]
-    internal List<ProfileController> Profiles = new List<ProfileController>(0);
+    [SerializeField] private  LocalApplicationData    _localApplicationData   = null;
 
     private string newProfileName = string.Empty;
     private string newProfileId   = string.Empty;
@@ -24,9 +21,11 @@ public class ProfilesManager : MonoBehaviour {
 
         WebClientManager.OnProfileListModified  += PopulateProfiles;
         WebClientManager.OnProfileCreated       += CreateNewProfile;
-
         WebClientManager.OnIdentificationDone   += DisplayIdentifiedSpeaker;
 
+        ProfileController.OnProfileRenamed      += _localApplicationData.HandleProfileRenamed;
+
+        _localApplicationData.ResetTimers();
     }
 
     private void ClearChildren() {
@@ -42,31 +41,35 @@ public class ProfilesManager : MonoBehaviour {
     }
 
     private void PopulateProfiles(string json) {
-        Debug.Log("<b>ServiceProfilesManager</b> PopulateProfiles with Json : " + json );
+        Debug.Log("<b>ProfilesManager</b> PopulateProfiles with Json : " + json );
 
         ClearChildren();
 
         DataProfileArray profileArray = DataProfileArray.CreateFromJSON(json);
-        Debug.Log(profileArray.ToString());
+        //Debug.Log(profileArray.ToString());
 
         int len = profileArray.DataProfiles.Length;
-        //Profiles = new List<ProfileController>(len);
-        Debug.Log(Profiles.Count);
+        string id;
+        string name;
 
         for (int i = 0; i < len; i++)
         {
-            Profiles[i] = Instantiate(profileControllerPrefab, transform);
-            Profiles[i].Init(profileArray.DataProfiles[i]);
-            Profiles[i].name = "Toto";
+            var profileController = Instantiate(profileControllerPrefab, transform);
+            profileController.Init(profileArray.DataProfiles[i]);
+
+            id   = profileController.IdentificationProfileId;
+
+            name = _localApplicationData.GetProfileById(id).Name;
+            profileController.SetName(name);
         }
     }
 
-    private void CreateNewProfile(RequestConfig requestConfig, string json) {
-        Debug.Log("<b>ServiceProfilesManager</b> CreateNewProfile with request :\n" + requestConfig.ToString() + "\n and Json : " + json);
+    private void CreateNewProfile(string id) {
+        Debug.Log("<b>ServiceProfilesManager</b> CreateNewProfile with Id : " + id);
 
-        DataProfile profile = DataProfile.CreateFromJSON(json);
-        WebClientManager.Instance._profiles.Add(profile);
+        newProfileId = id;
 
+        var newDataProfile        =  _localApplicationData.AddNewProfile(id);
     }
 
     internal ProfileController GetProfileById(string id) {
@@ -89,13 +92,14 @@ public class ProfilesManager : MonoBehaviour {
 
     internal ProfileController GetProfileByName(string name) {
 
-        int len = Profiles.Count;
+        ProfileController[] children = GetComponentsInChildren<ProfileController>();
+        int len = children.Length;
 
         for (int i = 0; i < len; i++)
         {
-            if (Profiles[i].ProfileName == name)
+            if (children[i].ProfileName == name)
             {
-                return Profiles[i];
+                return children[i];
             }
         }
 
@@ -110,9 +114,8 @@ public class ProfilesManager : MonoBehaviour {
 
     public void RenameLastProfile() {
 
-        int len = WebClientManager.Instance._profiles.Count;
-
-        WebClientManager.Instance._profiles[len - 1].name = inputFieldRef.text;
+        var newDataProfile  = _localApplicationData.GetProfileById(newProfileId);
+        newDataProfile.Name = inputFieldRef.text;
 
     }
 
@@ -135,13 +138,17 @@ public class ProfilesManager : MonoBehaviour {
 
         Toggle[] children = GetComponentsInChildren<Toggle>();
 
+        string idToDelete = string.Empty;
+
         int len = children.Length;
         for (int i = 0; i < len; i++)
         {
             if (children[i].isOn)
             {
-                string id = children[i].GetComponent<ProfileController>().IdentificationProfileId;
-                WebClientManager.Instance.DeleteProfile(id);
+                idToDelete = children[i].GetComponent<ProfileController>().IdentificationProfileId;
+                WebClientManager.Instance.DeleteProfile(idToDelete);
+
+                _localApplicationData.DeleteProfile(idToDelete);
             }
         }
     }
@@ -185,6 +192,42 @@ public class ProfilesManager : MonoBehaviour {
 
     private void DisplayIdentifiedSpeaker(string speakerId) {
 
-        GetProfileById(speakerId).SetVisibleStatus(ProfileController.EStatus.Identified);
+        ProfileController profile = GetProfileById(speakerId);
+
+        if (profile != null)
+        {
+            profile.SetVisibleStatus(ProfileController.EStatus.Identified);
+        }
+        else
+        {
+            Debug.Log("Cannot find any Speaker with Id " + speakerId);
+        }
+    }
+
+    private void RenameProfile(ProfileController profileController) {
+        Debug.Log("<b>ProfilesManager</b> RenameProfile : " + profileController.ProfileName);
+
+        var renamedProfile  = _localApplicationData.GetProfileById(profileController.IdentificationProfileId);
+
+        renamedProfile.Name = profileController.ProfileName;
+
+    }
+
+    private void OnDisable() {
+
+        WebClientManager.OnProfileListModified  -= PopulateProfiles;
+        WebClientManager.OnProfileCreated       -= CreateNewProfile;
+        WebClientManager.OnIdentificationDone   -= DisplayIdentifiedSpeaker;
+
+        ProfileController.OnProfileRenamed      -= _localApplicationData.HandleProfileRenamed;
+    }
+
+    private void OnDestroy() {
+
+        WebClientManager.OnProfileListModified -= PopulateProfiles;
+        WebClientManager.OnProfileCreated     -= CreateNewProfile;
+        WebClientManager.OnIdentificationDone -= DisplayIdentifiedSpeaker;
+
+        ProfileController.OnProfileRenamed    -= _localApplicationData.HandleProfileRenamed;
     }
 }
