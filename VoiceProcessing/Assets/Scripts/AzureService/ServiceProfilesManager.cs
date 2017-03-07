@@ -31,7 +31,7 @@ namespace AzureServiceManagement {
         /// Enrollment for speaker identification is text-independent, which means that there are no restrictions on what the speaker says in the audio. 
         /// The speaker's voice is recorded, and a number of features are extracted to form a unique voiceprint.
         /// </summary>
-        public static void CreateEnrollment(string identificationProfileId, bool shortAudio = true) {
+        public static void CreateEnrollment(string identificationProfileId, byte[] byteData, bool shortAudio = true) {
             Debug.Log("<b>ServiceProfilesManager</b> CreateEnrollment");
 
             // Request parameters
@@ -41,9 +41,11 @@ namespace AzureServiceManagement {
 
             // Request body
             //byte[] byteData = Encoding.UTF8.GetBytes("{body}");
-            VoiceRecord.StreamAudio();
+            //VoiceRecord.StreamAudio();
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.CreateEnrollment, VoiceRecord.fileBytes);
+            //requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.CreateEnrollment, VoiceRecord.fileBytes);
+
+            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.CreateEnrollment, byteData);
 
             OnRequestDone(requestConfig);
         }

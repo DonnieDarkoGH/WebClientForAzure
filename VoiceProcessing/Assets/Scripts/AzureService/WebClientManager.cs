@@ -13,6 +13,7 @@ namespace AzureServiceManagement{
 
         internal static System.Action<string> OnProfileListModified;
         internal static System.Action<string> OnProfileCreated;
+        internal static System.Action<string> OnProfileDeleted;
         internal static System.Action<string> OnIdentificationDone;
 
         [SerializeField]
@@ -22,10 +23,7 @@ namespace AzureServiceManagement{
         private string _subscriptionKey  = "8842b380852146a48496b709e0fbad2a";
 
         [SerializeField]
-        private string _currentProfileId = "2de27537-13d4-465a-bb70-9c1b9156ef1c";
-
-        [SerializeField]
-        private ProfilesManager profilesManagerRef = null;
+        private ProfilesManager _profilesManagerRef = null;
 
         private string opLocation = string.Empty;
 
@@ -46,6 +44,8 @@ namespace AzureServiceManagement{
             ServiceProfilesManager.OnRequestDone += InitHttpRequest;
             ServiceSpeakerManager.OnRequestDone  += InitHttpRequest;
 
+            AudioStreamer.OnBufferSaved          += HandleBufferSaved;
+
             GetAllProfiles();
         }
 
@@ -53,26 +53,28 @@ namespace AzureServiceManagement{
             Debug.Log("<b>WebClientManager</b> ClearResultPanel ");
 
             DisplayResponse(string.Empty);
+            _profilesManagerRef.ResetAllTimers();
         }
 
         public void CreateProfile() {
             Debug.Log("<b>WebClientManager</b> CreateProfile ");
 
-
             ServiceProfilesManager.CreateProfile();
         }
 
-        public void CreateEnrollment(string profileID, bool shortAudio = true) {
+        public void CreateEnrollment(byte[] byteData, bool shortAudio = true) {
             Debug.Log("<b>WebClientManager</b> CreateProfile ");
 
-            if(profileID == string.Empty)
+            string profileId = _profilesManagerRef.GetFirstProfileId();
+
+            if (profileId == string.Empty)
             {
                 DisplayResponse("WARNING ! You must select at least one Speaker for enrollement !");
                 return;
             }
                 
 
-            ServiceProfilesManager.CreateEnrollment(profileID, shortAudio);
+            ServiceProfilesManager.CreateEnrollment(profileId, byteData, shortAudio);
         }
 
         public void GetAllProfiles() {
@@ -105,19 +107,27 @@ namespace AzureServiceManagement{
             ServiceProfilesManager.DeleteProfile(profileID);
         }
 
-        public void Identification() {
+        public void Identification(byte[] byteData) {
             Debug.Log("<b>WebClientManager</b> Identification");
 
-            string profiles = profilesManagerRef.GetCSVProfiles();
+            string profiles = _profilesManagerRef.GetCSVProfiles();
 
             if (profiles == string.Empty)
             {
                 DisplayResponse("WARNING ! You must select at least one Speaker to Identify !");
                 return;
             }
+
+            if (byteData == null || byteData.Length == 0)
+            {
+                DisplayResponse("WARNING ! You must send data as byte[] to proceed to an Identification !");
+                return;
+            }
             //Debug.Log(profiles);
 
-            ServiceSpeakerManager.Identification(profiles, VoiceRecord.fileBytes, true);
+            //ServiceSpeakerManager.Identification(profiles, VoiceRecord.fileBytes, true);
+
+            ServiceSpeakerManager.Identification(profiles, byteData, true);
         }
 
 
@@ -176,6 +186,7 @@ namespace AzureServiceManagement{
             switch (serverOperation)
             {
                 case EServerOperation.CreateEnrollment:
+                    GetAllProfiles();
                     break;
 
                 case EServerOperation.CreateProfile:
@@ -281,16 +292,41 @@ namespace AzureServiceManagement{
 
         }
 
+        private void HandleBufferSaved(byte[] byteData, VoiceRecord.EState recordingState) {
+            Debug.Log("<b>WebClientManager</b> HandleBufferSaved in " + recordingState);
+
+            switch (recordingState)
+            {
+                case VoiceRecord.EState.Enrolling:
+                    CreateEnrollment(byteData);
+                    break;
+
+                case VoiceRecord.EState.Identifying:
+                    Identification(byteData);
+                    break;
+
+                default:
+                    Debug.Log("Buffering is done with no managed recording state...");
+                    break;
+            }
+        }
+
         private void OnDisable() {
             //Debug.Log("<b>WebClientManager</b> OnDisable");
 
             ServiceProfilesManager.OnRequestDone -= InitHttpRequest;
+            ServiceSpeakerManager.OnRequestDone  -= InitHttpRequest;
+
+            AudioStreamer.OnBufferSaved -= HandleBufferSaved;
         }
 
         private void OnDestroy() {
             //Debug.Log("<b>WebClientManager</b> OnDestroy");
 
             ServiceProfilesManager.OnRequestDone -= InitHttpRequest;
+            ServiceSpeakerManager.OnRequestDone  -= InitHttpRequest;
+
+            AudioStreamer.OnBufferSaved -= HandleBufferSaved;
         }
 
     }

@@ -62,10 +62,19 @@ public class LocalApplicationData : ScriptableObject {
 
         ListOfProfiles.Add(newProfile);
 
+        PlayerPrefs.SetString(id, name);
+        PlayerPrefs.Save();
+
         return newProfile;
     }
 
     internal bool DeleteProfile(string id) {
+
+        if (PlayerPrefs.HasKey(id))
+        {
+            PlayerPrefs.DeleteKey(id);
+            PlayerPrefs.Save();
+        }
 
         int len = ListOfProfiles.Count;
         for (int i = 0; i < len; i++)
@@ -114,9 +123,18 @@ public class LocalApplicationData : ScriptableObject {
     internal void HandleProfileRenamed(ProfileController profileController) {
         Debug.Log("<b>ProfileController</b> HandleProfileRenamed");
 
-        Profile renamedProfile  = GetProfileById(profileController.IdentificationProfileId);
+        string id               = profileController.IdentificationProfileId;
 
-        renamedProfile.Name     = profileController.ProfileName;
+        Profile renamedProfile  = GetProfileById(id);
+
+        if(renamedProfile != null)
+            renamedProfile.Name     = profileController.ProfileName;
+
+        if (PlayerPrefs.HasKey(id))
+        {
+            PlayerPrefs.SetString(id, profileController.ProfileName);
+            PlayerPrefs.Save();
+        }
 
     }
 

@@ -41,9 +41,10 @@ namespace AzureServiceManagement {
 
             // Request body
             //byte[] byteData = Encoding.UTF8.GetBytes("{body}");
-            VoiceRecord.StreamAudio();
+            //VoiceRecord.StreamAudio();
 
-            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.Identification, VoiceRecord.fileBytes);
+            //requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.Identification, VoiceRecord.fileBytes);
+            requestConfig = new RequestConfig(HttpMethod.POST, url, EServerOperation.Identification, audioBytes);
 
             OnRequestDone(requestConfig);
         }

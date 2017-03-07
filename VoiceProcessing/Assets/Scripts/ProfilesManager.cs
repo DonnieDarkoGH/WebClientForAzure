@@ -6,13 +6,12 @@ using AzureServiceManagement;
 
 public class ProfilesManager : MonoBehaviour {
 
-    [SerializeField] private  ProfileController       profileControllerPrefab = null;
+    [SerializeField] private  ProfileController       _profileControllerPrefab = null;
 
-    [SerializeField] private  InputField              inputFieldRef           = null;
+    [SerializeField] private  InputField              _inputFieldRef           = null;
 
-    [SerializeField] private  LocalApplicationData    _localApplicationData   = null;
+    [SerializeField] private  GameObject              _displayRatioPanel      = null;
 
-    private string newProfileName = string.Empty;
     private string newProfileId   = string.Empty;
 
 
@@ -23,9 +22,7 @@ public class ProfilesManager : MonoBehaviour {
         WebClientManager.OnProfileCreated       += CreateNewProfile;
         WebClientManager.OnIdentificationDone   += DisplayIdentifiedSpeaker;
 
-        ProfileController.OnProfileRenamed      += _localApplicationData.HandleProfileRenamed;
-
-        _localApplicationData.ResetTimers();
+        ProfileController.OnProfileRenamed      += RenameProfile;
     }
 
     private void ClearChildren() {
@@ -54,12 +51,13 @@ public class ProfilesManager : MonoBehaviour {
 
         for (int i = 0; i < len; i++)
         {
-            var profileController = Instantiate(profileControllerPrefab, transform);
+            var profileController = Instantiate(_profileControllerPrefab, transform);
             profileController.Init(profileArray.DataProfiles[i]);
 
             id   = profileController.IdentificationProfileId;
 
-            name = _localApplicationData.GetProfileById(id).Name;
+            name = GetProfileName(id);
+
             profileController.SetName(name);
         }
     }
@@ -69,10 +67,20 @@ public class ProfilesManager : MonoBehaviour {
 
         newProfileId = id;
 
-        var newDataProfile        =  _localApplicationData.AddNewProfile(id);
+        if(PlayerPrefs.HasKey(id))
+        {
+            Debug.Log("Id " + id + " already exists ! Profile will not be created.");
+        }
+        else
+        {
+            PlayerPrefs.SetString(id, "");
+            PlayerPrefs.Save();
+        }
+        
     }
 
     internal ProfileController GetProfileById(string id) {
+        Debug.Log("<b>ProfilesManager</b> GetProfileById " + id);
 
         ProfileController[] children = GetComponentsInChildren<ProfileController>();
         int len = children.Length;
@@ -90,7 +98,7 @@ public class ProfilesManager : MonoBehaviour {
         return null;
     }
 
-    internal ProfileController GetProfileByName(string name) {
+    /*internal ProfileController GetProfileByName(string name) {
 
         ProfileController[] children = GetComponentsInChildren<ProfileController>();
         int len = children.Length;
@@ -106,20 +114,10 @@ public class ProfilesManager : MonoBehaviour {
         Debug.LogError("No profile correspond to " + name);
 
         return null;
-    }
-
-    internal void DisplayNewNameInputField(bool isVisible) {
-        inputFieldRef.gameObject.SetActive(isVisible);
-    }
-
-    public void RenameLastProfile() {
-
-        var newDataProfile  = _localApplicationData.GetProfileById(newProfileId);
-        newDataProfile.Name = inputFieldRef.text;
-
-    }
+    }*/
 
     public void GetProfile() {
+        Debug.Log("<b>ProfilesManager</b> GetProfile");
 
         Toggle[] children = GetComponentsInChildren<Toggle>();
 
@@ -135,6 +133,7 @@ public class ProfilesManager : MonoBehaviour {
     }
 
     public void DeleteProfiles() {
+        Debug.Log("<b>ProfilesManager</b> DeleteProfiles");
 
         Toggle[] children = GetComponentsInChildren<Toggle>();
 
@@ -148,12 +147,44 @@ public class ProfilesManager : MonoBehaviour {
                 idToDelete = children[i].GetComponent<ProfileController>().IdentificationProfileId;
                 WebClientManager.Instance.DeleteProfile(idToDelete);
 
-                _localApplicationData.DeleteProfile(idToDelete);
+                if (PlayerPrefs.HasKey(idToDelete))
+                {
+                    PlayerPrefs.DeleteKey(idToDelete);
+                    PlayerPrefs.Save();
+                }
             }
         }
     }
 
+    public void DeleteAllNames() {
+        Debug.Log("<b>ProfilesManager</b> DeleteAllNames");
+
+        PlayerPrefs.DeleteAll();
+    }
+
+    public void ResetAllTimers() {
+
+        ProfileController[] children = GetComponentsInChildren<ProfileController>();
+
+        int len = children.Length;
+        for (int i = 0; i < len; i++)
+        {
+            children[i].ResetSpeechTimer();
+        }
+    }
+
+    public void RenameLastProfile() {
+        Debug.Log("<b>ProfilesManager</b> RenameLastProfile");
+
+        var lastCreatedProfile = GetProfileById(newProfileId);
+
+        lastCreatedProfile.ProfileName = _inputFieldRef.text;
+
+        RenameProfile(lastCreatedProfile);
+    }
+
     internal string GetCSVProfiles() {
+        Debug.Log("<b>ProfilesManager</b> GetCSVProfiles");
 
         string csvList = string.Empty;
 
@@ -174,7 +205,25 @@ public class ProfilesManager : MonoBehaviour {
         return csvList;
     }
 
+    public void DisplaySpeechRatio() {
+
+        _displayRatioPanel.SetActive(!_displayRatioPanel.activeSelf);
+
+        string result = "SPEECH RATIO :\n";
+        ProfileController[] children = GetComponentsInChildren<ProfileController>();
+
+        int len = children.Length;
+        for (int i = 0; i < len; i++)
+        {
+            result += System.String.Format("\n- {0} : {1:0.0%} \n", children[i].ProfileName, GetSpeechRatio(children[i]));
+        }
+
+
+        _displayRatioPanel.GetComponentInChildren<Text>().text = result;
+    }
+
     internal string GetFirstProfileId() {
+        Debug.Log("<b>ProfilesManager</b> GetFirstProfileId");
 
         Toggle[] children = GetComponentsInChildren<Toggle>();
         int len = children.Length;
@@ -191,6 +240,7 @@ public class ProfilesManager : MonoBehaviour {
     }
 
     private void DisplayIdentifiedSpeaker(string speakerId) {
+        Debug.Log("<b>ProfilesManager</b> DisplayIdentifiedSpeaker : " + speakerId);
 
         ProfileController profile = GetProfileById(speakerId);
 
@@ -204,12 +254,32 @@ public class ProfilesManager : MonoBehaviour {
         }
     }
 
+    private string GetProfileName(string id) {
+        Debug.Log("<b>ProfilesManager</b> GetProfileName : " + id);
+
+        string name = string.Empty;
+
+        if (PlayerPrefs.HasKey(id))
+        {
+            name = PlayerPrefs.GetString(id);
+        }
+
+        return name;
+    }
+
     private void RenameProfile(ProfileController profileController) {
         Debug.Log("<b>ProfilesManager</b> RenameProfile : " + profileController.ProfileName);
 
-        var renamedProfile  = _localApplicationData.GetProfileById(profileController.IdentificationProfileId);
+        if (profileController == null)
+        {
+            Debug.LogError("Cannot rename a null ProfileController !");
+        }
 
-        renamedProfile.Name = profileController.ProfileName;
+        string idToRename = profileController.IdentificationProfileId;
+        Debug.Log(idToRename);
+
+        PlayerPrefs.SetString(idToRename, profileController.ProfileName);
+        PlayerPrefs.Save();
 
     }
 
@@ -219,7 +289,7 @@ public class ProfilesManager : MonoBehaviour {
         WebClientManager.OnProfileCreated       -= CreateNewProfile;
         WebClientManager.OnIdentificationDone   -= DisplayIdentifiedSpeaker;
 
-        ProfileController.OnProfileRenamed      -= _localApplicationData.HandleProfileRenamed;
+        ProfileController.OnProfileRenamed      -= RenameProfile;
     }
 
     private void OnDestroy() {
@@ -228,6 +298,27 @@ public class ProfilesManager : MonoBehaviour {
         WebClientManager.OnProfileCreated     -= CreateNewProfile;
         WebClientManager.OnIdentificationDone -= DisplayIdentifiedSpeaker;
 
-        ProfileController.OnProfileRenamed    -= _localApplicationData.HandleProfileRenamed;
+        ProfileController.OnProfileRenamed    -= RenameProfile;
+    }
+
+    private float GetSpeechRatio(ProfileController profile) {
+
+        float speechTime = profile.TotalSpeechDuration;
+        float totalSpeechTime = 0f;
+
+        ProfileController[] children = GetComponentsInChildren<ProfileController>();
+
+        int len = children.Length;
+        for (int i = 0; i < len; i++)
+        {
+            totalSpeechTime += children[i].TotalSpeechDuration;
+        }
+
+        if(totalSpeechTime <= Mathf.Epsilon)
+        {
+            return 0f;
+        }
+
+        return speechTime / totalSpeechTime;
     }
 }
