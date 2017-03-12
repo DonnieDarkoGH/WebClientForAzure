@@ -5,38 +5,64 @@ using System.IO;
 
 public class VoiceRecord : MonoBehaviour {
 
+    public static float  SAMPLE_RATE_IDENTIFY = 2f;
+    public static float  SAMPLE_RATE_ENROLL   = 10f;
+    public static string MICRONAME            = string.Empty;
+
     internal enum EState {None, Enrolling, Identifying, Recording, Stopped }
 
-    public static byte[] fileBytes;
+    private AudioSource _audioSourceRef         = null;
 
-    AudioSource     _audioSourceRef;
-    string          microName;
-    string          path = @"c:\temp\MyTest.dat";
-    float           _recordingTimer = 0.0f;
-    float           _totalSpeechDuration = 0.0f;
+    private float       _recordingTimer         = 0.0f;
+    private float       _totalSpeechDuration    = 0.0f;
+    private int         _currentBufferIndex     = 0;
 
-    [SerializeField] AudioStreamer   _audioStreamerRef   = null;
+    [SerializeField] AudioStreamer _audioStreamerRef = null;
 
     [SerializeField] internal EState _state = EState.None;
 
-    [SerializeField] AudioClip  _voiceClip      = null;
     [SerializeField] Image      _startBtnImage  = null;
     [SerializeField] Text       _timerDisplay   = null;
-    [SerializeField] Text       _totalSpeechDisplay = null;
+    [SerializeField] Text       _totalSpeechDisplay  = null;
 
     [SerializeField] SwitchButton _enrollSwitchBtn   = null;
 
-    private int currentBufferIndex = 0;
+    [SerializeField]
+    [Range(1f,10f)]   private float _identifyDuration  = 2f;
 
-    public static float SAMPLE_RATE_IDENTIFY = 2f;
-    public static float SAMPLE_RATE_ENROLL   = 10f;
+    [SerializeField]
+    [Range(5f, 100f)] private float _enrollingDuration = 10f;
+
+    [ExecuteInEditMode]
+    public float IdentifyDuration {
+        get {
+            return _identifyDuration;
+        }
+
+        set {
+            SAMPLE_RATE_IDENTIFY = value;
+            _identifyDuration = value;
+        }
+    }
+
+    [ExecuteInEditMode]
+    public float EnrollingDuration {
+        get {
+            return _enrollingDuration;
+        }
+
+        set {
+            SAMPLE_RATE_ENROLL = value;
+            _enrollingDuration = value;
+        }
+    }
 
     // Use this for initialization
     void Awake () {
 
         //path = Application.dataPath + @"/Audio.dat";
         //Debug.Log(path);
-
+        DebugHelper.Instance.HandleDebugInfo("Buffer path : " + Application.persistentDataPath, false, true);
         Debug.Log(AudioSettings.GetConfiguration().speakerMode);
 
         _audioSourceRef = GetComponent<AudioSource>();
@@ -48,11 +74,14 @@ public class VoiceRecord : MonoBehaviour {
         {
             Microphone.GetDeviceCaps(device, out minFreq, out maxFreq);
             Debug.Log("Name : " + device + " / " + minFreq +" to " + maxFreq);
-            microName = device;
+            MICRONAME = device;
+            DebugHelper.Instance.HandleDebugInfo("Micro : " + MICRONAME, true, true);
         }
 
         Debug.Log(AudioSettings.outputSampleRate + ", " + AudioSettings.speakerMode);
 
+        SAMPLE_RATE_IDENTIFY = _identifyDuration;
+        SAMPLE_RATE_ENROLL   = _enrollingDuration;
     }
 
     private void Update() {
@@ -60,26 +89,28 @@ public class VoiceRecord : MonoBehaviour {
         if (_state == EState.Stopped || _state == EState.None)
             return;
 
-        if (!Microphone.IsRecording(microName))
+        if (!Microphone.IsRecording(MICRONAME))
         {
-            Debug.Log("Start recording with : " + microName);
-            _voiceClip          = Microphone.Start(microName, true, (int)_recordingTimer, 16000);
-            _audioSourceRef.clip = _voiceClip;
+            Debug.Log("Start recording with : " + MICRONAME);
+            _audioSourceRef.clip = Microphone.Start(MICRONAME, true, (int)_recordingTimer, 16000);
+            _audioSourceRef.Play();
         }
 
-        _recordingTimer     -= Time.deltaTime;
         if (_state == EState.Identifying)
         {
-            _totalSpeechDuration += Time.deltaTime;
+            _totalSpeechDuration    += Time.deltaTime;
             _totalSpeechDisplay.text = String.Format("Total Speech :\n {0:#0.0} sec.", _totalSpeechDuration);
         }
 
+        _recordingTimer     -= Time.deltaTime;
         _timerDisplay.text  = String.Format("{0:#0.00} sec.", _recordingTimer);
 
         if (_recordingTimer <= 0f)
         {
-            _audioStreamerRef.SaveBuffer(_audioSourceRef, currentBufferIndex, _state);
-            currentBufferIndex = currentBufferIndex == 0 ? 1 : 0;
+            DebugHelper.Instance.HandleDebugInfo("Saving Buffer in state : " + _state, true);
+            _audioStreamerRef.SaveBuffer(_audioSourceRef, _currentBufferIndex, _state);
+
+            _currentBufferIndex = _currentBufferIndex == 0 ? 1 : 0;
 
             if (_state == EState.Identifying)
             {
@@ -96,9 +127,9 @@ public class VoiceRecord : MonoBehaviour {
 
     }
 
-    private void SaveFile(AudioClip clip) {
+    /*private void SaveFile(AudioClip clip) {
         Debug.Log("<b>VoiceRecord</b> SaveFile " + clip.name);
-        Debug.Log(File.Exists(path));
+        Debug.Log(File.Exists(_path));
 
 #if UNITY_EDITOR
         UnityEditor.AssetDatabase.AddObjectToAsset(clip, UnityEditor.AssetDatabase.GetAssetPath(this) + @"Assets/buffer.wav");
@@ -106,36 +137,36 @@ public class VoiceRecord : MonoBehaviour {
 #endif
 
 
-        if (!File.Exists(path))
+        if (!File.Exists(_path))
         {
             // Create a file to write to.
-            using (BinaryWriter bw = new BinaryWriter(File.Create(path)))
+            using (BinaryWriter bw = new BinaryWriter(File.Create(_path)))
             {
                 bw.Write(clip);
             }
         }
         else
         {
-            using (BinaryWriter bw = new BinaryWriter(File.Open(path, FileMode.Create)))
+            using (BinaryWriter bw = new BinaryWriter(File.Open(_path, FileMode.Create)))
             {
 
                 bw.Write(clip);
             }
         }
-    }
+    }*/
 
-    internal static void StreamAudio() {
-        Debug.Log("<b>VoiceRecord</b> StreamAudio");
+    //internal static void StreamAudio() {
+    //    Debug.Log("<b>VoiceRecord</b> StreamAudio");
 
-        string filePath = Application.dataPath + @"/Resources/buffer.wav";
+    //    string filePath = Application.dataPath + @"/Resources/buffer.wav";
 
-        FileStream stream = File.OpenRead(filePath);
-        //Debug.Log(stream.Length);
-        fileBytes = new byte[stream.Length];
+    //    FileStream stream = File.OpenRead(filePath);
+    //    //Debug.Log(stream.Length);
+    //    fileBytes = new byte[stream.Length];
 
-        stream.Read(fileBytes, 0, fileBytes.Length);
-        stream.Close();
-    }
+    //    stream.Read(fileBytes, 0, fileBytes.Length);
+    //    stream.Close();
+    //}
 
     public void CreateEnrollment() {
         Debug.Log("<b>VoiceRecord</b> CreateEnrollment");
@@ -181,7 +212,7 @@ public class VoiceRecord : MonoBehaviour {
     public void StopRecord() {
         Debug.Log("<b>VoiceRecord</b> StopRecord");
 
-        Microphone.End(microName);
+        Microphone.End(MICRONAME);
 
         _state = EState.Stopped;
 
@@ -216,6 +247,13 @@ public class VoiceRecord : MonoBehaviour {
         Debug.Log("<b>VoiceRecord</b> ExitApplication");
 
         Application.Quit();
+    }
+
+    public void ReplayLastSample() {
+        Debug.Log("<b>VoiceRecord</b> ReplayLastSample");
+
+        DebugHelper.Instance.HandleDebugInfo("Replaying last audio sample (" + SAMPLE_RATE_IDENTIFY + " sec.)");
+        _audioSourceRef.PlayOneShot(_audioSourceRef.clip);
     }
 
 }

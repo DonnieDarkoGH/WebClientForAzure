@@ -35,12 +35,13 @@ public static class SavWav {
     public static Byte[] DataBytes;
 
     public static bool Save(string filename, AudioClip clip) {
-		if (!filename.ToLower().EndsWith(".wav")) {
+
+        if (!filename.ToLower().EndsWith(".wav")) {
 			filename += ".wav";
 		}
 
-        //var filepath = Path.Combine(Application.persistentDataPath, filename);
-        var filepath = Path.Combine(Application.dataPath, filename);
+        var filepath = Path.Combine(Application.persistentDataPath, filename);
+        //var filepath = Path.Combine(Application.dataPath, filename);
 
         Debug.Log(filepath);
 
@@ -75,7 +76,9 @@ public static class SavWav {
             }
         }
 
-		return true; // TODO: return false if there's a failure saving the file
+        DebugHelper.Instance.HandleDebugInfo("Saving audio file " + filename, true);
+
+        return true; // TODO: return false if there's a failure saving the file
 	}
 
 	public static AudioClip TrimSilence(AudioClip clip, float min) {

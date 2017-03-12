@@ -11,10 +11,14 @@ public class AudioStreamer : MonoBehaviour {
 
     internal void SaveBuffer(AudioSource source, int index, VoiceRecord.EState recordState) {
         Debug.Log("<b>AudioStreamer</b> SaveBuffer : " + index);
+        DebugHelper.Instance.HandleDebugInfo("Buffer index : " + index, true);
 
-        SavWav.Save("Resources/buffer" + index, source.clip);
+        SavWav.Save("buffer" + index, source.clip);
+        //SavWav.Save("Resources/buffer" + index, source.clip);
 
-        string filePath = Application.dataPath + @"/Resources/buffer" + index + ".wav";
+        string filePath = Application.persistentDataPath + @"/buffer" + index + ".wav";
+        DebugHelper.Instance.HandleDebugInfo("filePath : " + filePath, true);
+        //string filePath = Application.dataPath + @"/Resources/buffer" + index + ".wav";
 
         FileStream stream       = File.OpenRead(filePath);
 

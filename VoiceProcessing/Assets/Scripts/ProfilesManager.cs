@@ -52,6 +52,8 @@ public class ProfilesManager : MonoBehaviour {
         for (int i = 0; i < len; i++)
         {
             var profileController = Instantiate(_profileControllerPrefab, transform);
+            profileController.transform.localScale = Vector3.one;
+
             profileController.Init(profileArray.DataProfiles[i]);
 
             id   = profileController.IdentificationProfileId;

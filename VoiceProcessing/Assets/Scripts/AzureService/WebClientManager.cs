@@ -17,9 +17,6 @@ namespace AzureServiceManagement{
         internal static System.Action<string> OnIdentificationDone;
 
         [SerializeField]
-        private Text TextResult = null;
-
-        [SerializeField]
         private string _subscriptionKey  = "8842b380852146a48496b709e0fbad2a";
 
         [SerializeField]
@@ -46,14 +43,17 @@ namespace AzureServiceManagement{
 
             AudioStreamer.OnBufferSaved          += HandleBufferSaved;
 
-            GetAllProfiles();
+            //GetAllProfiles();
         }
 
         public void ClearResultPanel() {
             Debug.Log("<b>WebClientManager</b> ClearResultPanel ");
 
-            DisplayResponse(string.Empty);
+            DebugHelper.Instance.HandleDebugInfo(string.Empty, false);
+            //DisplayResponse(string.Empty);
             _profilesManagerRef.ResetAllTimers();
+
+            DebugHelper.Instance.ShowPersistentDebugInfo();
         }
 
         public void CreateProfile() {
@@ -69,7 +69,8 @@ namespace AzureServiceManagement{
 
             if (profileId == string.Empty)
             {
-                DisplayResponse("WARNING ! You must select at least one Speaker for enrollement !");
+                DebugHelper.Instance.HandleDebugInfo("WARNING ! You must select at least one Speaker for enrollement !");
+                //DisplayResponse("WARNING ! You must select at least one Speaker for enrollement !");
                 return;
             }
                 
@@ -88,7 +89,8 @@ namespace AzureServiceManagement{
 
             if (profileID == string.Empty)
             {
-                DisplayResponse("WARNING ! You must select at least one Speaker to get his Profile !");
+                DebugHelper.Instance.HandleDebugInfo("WARNING ! You must select at least one Speaker to get his Profile !");
+                //DisplayResponse("WARNING ! You must select at least one Speaker to get his Profile !");
                 return;
             }
 
@@ -100,7 +102,8 @@ namespace AzureServiceManagement{
 
             if (profileID == string.Empty)
             {
-                DisplayResponse("WARNING ! You must select at least one Speaker to delete !");
+                DebugHelper.Instance.HandleDebugInfo("WARNING ! You must select at least one Speaker to delete !");
+                //DisplayResponse("WARNING ! You must select at least one Speaker to delete !");
                 return;
             }
 
@@ -114,13 +117,15 @@ namespace AzureServiceManagement{
 
             if (profiles == string.Empty)
             {
-                DisplayResponse("WARNING ! You must select at least one Speaker to Identify !");
+                DebugHelper.Instance.HandleDebugInfo("WARNING ! You must select at least one Speaker to Identify !");
+                //DisplayResponse("WARNING ! You must select at least one Speaker to Identify !");
                 return;
             }
 
             if (byteData == null || byteData.Length == 0)
             {
-                DisplayResponse("WARNING ! You must send data as byte[] to proceed to an Identification !");
+                DebugHelper.Instance.HandleDebugInfo("WARNING ! You must send data as byte[] to proceed to an Identification !");
+                //DisplayResponse("WARNING ! You must send data as byte[] to proceed to an Identification !");
                 return;
             }
             //Debug.Log(profiles);
@@ -238,23 +243,14 @@ namespace AzureServiceManagement{
             }
 
             // Show results as text
-            DisplayResponse(request.downloadHandler.text);
+            DebugHelper.Instance.HandleDebugInfo(request.downloadHandler.text);
+            //DisplayResponse(request.downloadHandler.text);
 
             // Or retrieve results as binary data
             //byte[] results = request.downloadHandler.data;
 
             Debug.Log("Code Response : " + request.responseCode);
 
-        }
-
-        private void DisplayResponse(string textToDisplay) {
-            //Debug.Log("<b>WebClientManager</b> DisplayResponse " + textToDisplay);
-
-            TextResult.text = textToDisplay;
-
-            //JsonProfileInterface profiles = JsonProfileInterface.CreateFromJSON(textToDisplay);
-
-            //Debug.Log(profiles.ToString());
         }
 
         IEnumerator WaitForIdentification(UnityWebRequest request) {
