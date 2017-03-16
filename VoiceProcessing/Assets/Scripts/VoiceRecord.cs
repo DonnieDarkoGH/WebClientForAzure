@@ -12,6 +12,7 @@ public class VoiceRecord : MonoBehaviour {
     internal enum EState {None, Enrolling, Identifying, Recording, Stopped }
 
     private AudioSource _audioSourceRef         = null;
+    private AudioListener _listenerRef          = null;
 
     private float       _recordingTimer         = 0.0f;
     private float       _totalSpeechDuration    = 0.0f;
@@ -32,6 +33,9 @@ public class VoiceRecord : MonoBehaviour {
 
     [SerializeField]
     [Range(5f, 100f)] private float _enrollingDuration = 10f;
+
+    [SerializeField]  private float _loudness          = 0f;
+    private float sensitivity = 100;
 
     [ExecuteInEditMode]
     public float IdentifyDuration {
@@ -64,8 +68,10 @@ public class VoiceRecord : MonoBehaviour {
         //Debug.Log(path);
         DebugHelper.Instance.HandleDebugInfo("Buffer path : " + Application.persistentDataPath, false, true);
         Debug.Log(AudioSettings.GetConfiguration().speakerMode);
-
+        AudioSettings.outputSampleRate = 256;
         _audioSourceRef = GetComponent<AudioSource>();
+
+        _listenerRef = GetComponent<AudioListener>();
 
         int minFreq = 0;
         int maxFreq = 0;
@@ -86,8 +92,11 @@ public class VoiceRecord : MonoBehaviour {
 
     private void Update() {
 
+        DisplaySpectrum();
+
         if (_state == EState.Stopped || _state == EState.None)
             return;
+
 
         if (!Microphone.IsRecording(MICRONAME))
         {
@@ -255,5 +264,21 @@ public class VoiceRecord : MonoBehaviour {
         DebugHelper.Instance.HandleDebugInfo("Replaying last audio sample (" + SAMPLE_RATE_IDENTIFY + " sec.)");
         _audioSourceRef.PlayOneShot(_audioSourceRef.clip);
     }
+
+    private void DisplaySpectrum() {
+
+        float[] spectrum = new float[256];
+
+        AudioListener.GetSpectrumData(spectrum, 0, FFTWindow.Rectangular);
+
+        for (int i = 1; i < spectrum.Length - 1; i++)
+        {
+            //Debug.DrawLine(new Vector3(i - 1, spectrum[i] + 10, 0), new Vector3(i, spectrum[i + 1] + 10, 0), Color.red);
+            Debug.DrawLine(new Vector3(i - 1, Mathf.Log(spectrum[i - 1]) + 10, 2), new Vector3(i, Mathf.Log(spectrum[i]) + 10, 2), Color.cyan);
+            //Debug.DrawLine(new Vector3(Mathf.Log(i - 1), spectrum[i - 1] - 10, 1), new Vector3(Mathf.Log(i), spectrum[i] - 10, 1), Color.green);
+            //Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(spectrum[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(spectrum[i]), 3), Color.blue);
+        }
+    }
+
 
 }

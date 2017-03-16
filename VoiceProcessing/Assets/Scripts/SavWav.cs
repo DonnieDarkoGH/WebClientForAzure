@@ -48,33 +48,20 @@ public static class SavWav {
 		// Make sure directory exists if user is saving to sub dir.
 		Directory.CreateDirectory(Path.GetDirectoryName(filepath));
 
-        using (StreamWriter writer = File.CreateText("Samples.txt"))
+
+        using (var fileStream = CreateEmpty(filepath))
         {
-            using (var fileStream = CreateEmpty(filepath))
-            {
 
-                Byte[] bytesData   = ConvertAndWrite(fileStream, clip);
+            Byte[] bytesData   = ConvertAndWrite(fileStream, clip);
 
-                Byte[] bytesHeader = WriteHeader(fileStream, clip);
+            Byte[] bytesHeader = WriteHeader(fileStream, clip);
 
-                DataBytes = new Byte[bytesHeader.Length + bytesData.Length];
-                bytesHeader.CopyTo(DataBytes, 0);
-                bytesData.CopyTo(DataBytes, bytesHeader.Length);
+            //DataBytes = new Byte[bytesHeader.Length + bytesData.Length];
+            //bytesHeader.CopyTo(DataBytes, 0);
+            //bytesData.CopyTo(DataBytes, bytesHeader.Length);
 
-                //int len = bytesHeader.Length;
-                //for (int i = 0; i < len; i++)
-                //{
-                //    writer.Write(bytesHeader[i]);
-                //}
-
-                //len = bytesData.Length;
-                //for (int i = 0; i < len; i++)
-                //{
-                //    writer.Write(bytesData[i]);
-                //}
-
-            }
         }
+
 
         DebugHelper.Instance.HandleDebugInfo("Saving audio file " + filename, true);
 
