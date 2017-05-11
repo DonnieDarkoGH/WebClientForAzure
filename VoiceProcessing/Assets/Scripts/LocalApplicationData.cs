@@ -1,9 +1,16 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
+// CAUTION : As long as ScriptableObject are not saved between sessions, this class is no longer used
+// and the storing in PlayerPrefs is now done in ProfileController
+
+/// <summary>
+/// This class is a helper to manage profile data that are not saved on the server side
+/// In fact, this is just a mapping between profile Id stored on the server and the real name of users
+/// </summary>
 public class LocalApplicationData : ScriptableObject {
 
+    // Base class for defining a Profile
     [System.Serializable]
     internal class Profile {
 
@@ -21,9 +28,11 @@ public class LocalApplicationData : ScriptableObject {
         internal Profile() : this(string.Empty, string.Empty) {}
     }
 
+    // Dynamic list of profiles : It is populated when parsing the JSON result of a GetAllProfiles request
     [SerializeField]
     internal List<Profile> ListOfProfiles = new List<Profile>();
 
+    // Getter
     internal Profile GetProfileById(string id) {
         Debug.Log("<b>LocalApplicationData</b> GetProfileById " + id);
 
@@ -40,6 +49,7 @@ public class LocalApplicationData : ScriptableObject {
         return null;
     }
 
+    // Getter
     internal Profile GetProfileByName(string name) {
         Debug.Log("<b>LocalApplicationData</b> GetProfileByName " + name);
 
@@ -56,6 +66,7 @@ public class LocalApplicationData : ScriptableObject {
         return null;
     }
 
+    // Add a profile and save it in PlayerPrefs
     internal Profile AddNewProfile(string id, string name = "") {
 
         Profile newProfile = new Profile(id, name);
@@ -68,6 +79,7 @@ public class LocalApplicationData : ScriptableObject {
         return newProfile;
     }
 
+    // Delete a profile and remove it from PlayerPrefs
     internal bool DeleteProfile(string id) {
 
         if (PlayerPrefs.HasKey(id))
@@ -120,6 +132,8 @@ public class LocalApplicationData : ScriptableObject {
 
     }
 
+    // ProfileController is a script attached to each UI component that display data for a single user
+    // When changing the name on screen, it is important to update PlayerPrefs
     internal void HandleProfileRenamed(ProfileController profileController) {
         Debug.Log("<b>ProfileController</b> HandleProfileRenamed");
 

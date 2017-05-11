@@ -3,6 +3,11 @@ using UnityEngine;
 
 namespace AzureServiceManagement {
 
+    /// <summary>
+    /// Azure services are returning data in a JSON format and we need to parse them for later use
+    /// More details are available in Microsoft Cognitive Services documentation : 
+    /// https://westus.dev.cognitive.microsoft.com/docs/services/563309b6778daf02acc0a508/operations/5645c3271984551c84ec6797
+    /// </summary>
     internal abstract class JsonToObject : object {
 
         public static JsonToObject CreateFromJSON(string jsonString) {
@@ -11,6 +16,7 @@ namespace AzureServiceManagement {
     }
 
 
+    // This part is a sub-part of DataRequest
     [System.Serializable]
     internal class ProcessingResult : JsonToObject {
 
@@ -40,6 +46,8 @@ namespace AzureServiceManagement {
         }
     }
 
+
+    // A data request is returned when doing a GetOperationStatus 
     [System.Serializable]
     internal class DataRequest : JsonToObject {
 
@@ -67,6 +75,9 @@ namespace AzureServiceManagement {
         }
     }
 
+
+    // Data returned for each profile creation or inquiry
+    // This in particular a sub-step to get an array of data Profiles through a JSON as required in DataProfileArray
     [System.Serializable]
     internal class DataProfile : JsonToObject {
         public string name = string.Empty;
@@ -81,6 +92,10 @@ namespace AzureServiceManagement {
         internal DataProfile(string profileName, string id) {
             name = profileName;
             identificationProfileId = id;
+        }
+
+        // Constructor with no argument return the Unknown profile
+        internal DataProfile() :this("Unknown", "00000000-0000-0000-0000-000000000000") {
         }
 
         public static new DataProfile CreateFromJSON(string jsonString) {
@@ -104,6 +119,7 @@ namespace AzureServiceManagement {
         }
     }
 
+    // Used for getting data from JSON returned when doing a GetAllProfiles
     [System.Serializable]
     internal class DataProfileArray : JsonToObject {
 

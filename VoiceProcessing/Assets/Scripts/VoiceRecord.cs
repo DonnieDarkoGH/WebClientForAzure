@@ -1,42 +1,57 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System;
-using System.IO;
 
+/// <summary>
+/// This class is a first try to record voice audio data and to send them to Azure WebService (Voice Recognition)
+/// Most of the code below should be refactored because it results from iterative tries and researches
+/// </summary>
 public class VoiceRecord : MonoBehaviour {
 
+    // Microname is more easily accessed as a static field but there's no more reason in the present state of the project
+    public static string MICRONAME = string.Empty;
+
+    // Sample rates are recording duration values (a small duration when proceeding to identification and a bigger one for enrolling)
     public static float  SAMPLE_RATE_IDENTIFY = 2f;
     public static float  SAMPLE_RATE_ENROLL   = 10f;
-    public static string MICRONAME            = string.Empty;
 
+    // These rates can be modified in the inspector thanks to the following serialized fields and their related properties
+    [SerializeField]
+    [Range(1f, 10f)]
+    private float _identifyDuration = 2f;
+
+    [SerializeField]
+    [Range(5f, 100f)]
+    private float _enrollingDuration = 10f;
+
+    // Processing state may be useful in general
     internal enum EState {None, Enrolling, Identifying, Recording, Stopped }
-
-    private AudioSource _audioSourceRef         = null;
-    private AudioListener _listenerRef          = null;
-
-    private float       _recordingTimer         = 0.0f;
-    private float       _totalSpeechDuration    = 0.0f;
-    private int         _currentBufferIndex     = 0;
-
-    [SerializeField] AudioStreamer _audioStreamerRef = null;
-
     [SerializeField] internal EState _state = EState.None;
 
-    [SerializeField] Image      _startBtnImage  = null;
+    // Reference fields to some useful components
+    [SerializeField]
+    private AudioStreamer   _audioStreamer = null;
+    private AudioSource     _audioSource = null;
+    private AudioVisualizer _vizualizer     = null; // Caution ! This does not work to vizualise spectrum when recording (it only works when reading an audio file)
+
+    // Timer value used for sampling audio files
+    private float       _recordingTimer         = 0.0f;
+
+    // This private value is only used for displaying total speech duration in screen
+    private float       _totalSpeechDuration    = 0.0f;
+
+    // The buffer index is used for switching between 2 indexes
+    private int         _currentBufferIndex     = 0;
+
+    // These UI components should have been managed in a dedicated class but there was not enough for doing the job correctly
+    [SerializeField] Image      _startBtnImage  = null; // CAUTION ! This button is currently disable
     [SerializeField] Text       _timerDisplay   = null;
     [SerializeField] Text       _totalSpeechDisplay  = null;
 
     [SerializeField] SwitchButton _enrollSwitchBtn   = null;
 
-    [SerializeField]
-    [Range(1f,10f)]   private float _identifyDuration  = 2f;
 
-    [SerializeField]
-    [Range(5f, 100f)] private float _enrollingDuration = 10f;
-
-    [SerializeField]  private float _loudness          = 0f;
-    private float sensitivity = 100;
-
+    // This property is used for updating a static field through the inspector
     [ExecuteInEditMode]
     public float IdentifyDuration {
         get {
@@ -49,6 +64,7 @@ public class VoiceRecord : MonoBehaviour {
         }
     }
 
+    // This property is used for updating a static field through the inspector
     [ExecuteInEditMode]
     public float EnrollingDuration {
         get {
@@ -61,21 +77,33 @@ public class VoiceRecord : MonoBehaviour {
         }
     }
 
+    // Just in case we need to access the value from outside the class
+    public float TotalSpeechDuration {
+        get {
+            return _totalSpeechDuration;
+        }
+    }
+
     // Use this for initialization
     void Awake () {
 
-        //path = Application.dataPath + @"/Audio.dat";
-        //Debug.Log(path);
         DebugHelper.Instance.HandleDebugInfo("Buffer path : " + Application.persistentDataPath, false, true);
         Debug.Log(AudioSettings.GetConfiguration().speakerMode);
-        AudioSettings.outputSampleRate = 256;
-        _audioSourceRef = GetComponent<AudioSource>();
 
-        _listenerRef = GetComponent<AudioListener>();
+        //AudioSettings.outputSampleRate = 256;
+
+        // Set the audio source and vizualer reference
+        if(_audioSource == null)
+            _audioSource = GetComponent<AudioSource>();
+
+        if (_vizualizer == null)
+            _vizualizer = GetComponent<AudioVisualizer>();
+
 
         int minFreq = 0;
         int maxFreq = 0;
 
+        // Find the micro name for later use, get some information about the device and display that on debug panel
         foreach(var device in Microphone.devices)
         {
             Microphone.GetDeviceCaps(device, out minFreq, out maxFreq);
@@ -86,25 +114,28 @@ public class VoiceRecord : MonoBehaviour {
 
         Debug.Log(AudioSettings.outputSampleRate + ", " + AudioSettings.speakerMode);
 
+        // Set the sampling values
         SAMPLE_RATE_IDENTIFY = _identifyDuration;
         SAMPLE_RATE_ENROLL   = _enrollingDuration;
+
     }
 
     private void Update() {
 
-        DisplaySpectrum();
-
+        // No need to go further if not recording
         if (_state == EState.Stopped || _state == EState.None)
             return;
 
-
+        
+        // Start the microphone, but only once
         if (!Microphone.IsRecording(MICRONAME))
         {
             Debug.Log("Start recording with : " + MICRONAME);
-            _audioSourceRef.clip = Microphone.Start(MICRONAME, true, (int)_recordingTimer, 16000);
-            _audioSourceRef.Play();
+            _audioSource.clip = Microphone.Start(MICRONAME, true, (int)_recordingTimer, 16000);
+            _audioSource.Play();
         }
 
+        // Update global speech time when processing Identification
         if (_state == EState.Identifying)
         {
             _totalSpeechDuration    += Time.deltaTime;
@@ -114,11 +145,13 @@ public class VoiceRecord : MonoBehaviour {
         _recordingTimer     -= Time.deltaTime;
         _timerDisplay.text  = String.Format("{0:#0.00} sec.", _recordingTimer);
 
+        // recordingTimer value decrease from the sampling rate value to zero, then data are streamed to the server and we restart the process
         if (_recordingTimer <= 0f)
         {
             DebugHelper.Instance.HandleDebugInfo("Saving Buffer in state : " + _state, true);
-            _audioStreamerRef.SaveBuffer(_audioSourceRef, _currentBufferIndex, _state);
+            _audioStreamer.SaveBuffer(_audioSource, _currentBufferIndex, _state);
 
+            // Switch between 2 buffers in order to properly chain speech process
             _currentBufferIndex = _currentBufferIndex == 0 ? 1 : 0;
 
             if (_state == EState.Identifying)
@@ -126,6 +159,7 @@ public class VoiceRecord : MonoBehaviour {
                 _recordingTimer = SAMPLE_RATE_IDENTIFY;
             }
 
+            // Enrooling process is done only once, so we stop recording when it's over
             if(_state == EState.Enrolling)
             {
                 _recordingTimer = 0f;
@@ -136,47 +170,7 @@ public class VoiceRecord : MonoBehaviour {
 
     }
 
-    /*private void SaveFile(AudioClip clip) {
-        Debug.Log("<b>VoiceRecord</b> SaveFile " + clip.name);
-        Debug.Log(File.Exists(_path));
-
-#if UNITY_EDITOR
-        UnityEditor.AssetDatabase.AddObjectToAsset(clip, UnityEditor.AssetDatabase.GetAssetPath(this) + @"Assets/buffer.wav");
-        UnityEditor.AssetDatabase.SaveAssets();
-#endif
-
-
-        if (!File.Exists(_path))
-        {
-            // Create a file to write to.
-            using (BinaryWriter bw = new BinaryWriter(File.Create(_path)))
-            {
-                bw.Write(clip);
-            }
-        }
-        else
-        {
-            using (BinaryWriter bw = new BinaryWriter(File.Open(_path, FileMode.Create)))
-            {
-
-                bw.Write(clip);
-            }
-        }
-    }*/
-
-    //internal static void StreamAudio() {
-    //    Debug.Log("<b>VoiceRecord</b> StreamAudio");
-
-    //    string filePath = Application.dataPath + @"/Resources/buffer.wav";
-
-    //    FileStream stream = File.OpenRead(filePath);
-    //    //Debug.Log(stream.Length);
-    //    fileBytes = new byte[stream.Length];
-
-    //    stream.Read(fileBytes, 0, fileBytes.Length);
-    //    stream.Close();
-    //}
-
+    // This method is called by a UI button that has a toggle comportment
     public void CreateEnrollment() {
         Debug.Log("<b>VoiceRecord</b> CreateEnrollment");
 
@@ -192,6 +186,7 @@ public class VoiceRecord : MonoBehaviour {
 
     }
 
+    // This one too
     public void IdentifySpeaker() {
         Debug.Log("<b>VoiceRecord</b> IdentifySpeaker");
 
@@ -208,6 +203,7 @@ public class VoiceRecord : MonoBehaviour {
     }
 
 
+    // No longer used because the button is disabled 
     public void StartRecord() {
         Debug.Log("<b>VoiceRecord</b> StartRecord");
 
@@ -218,6 +214,7 @@ public class VoiceRecord : MonoBehaviour {
         _state = EState.Recording;
     }
 
+    // Explicit
     public void StopRecord() {
         Debug.Log("<b>VoiceRecord</b> StopRecord");
 
@@ -227,57 +224,25 @@ public class VoiceRecord : MonoBehaviour {
 
     }
 
+    // Called by the reset button
     public void ClearSpeechDuration() {
         _totalSpeechDuration = 0.0f;
         _totalSpeechDisplay.text = String.Format("Total Speech :\n {0:#0.0} sec.", _totalSpeechDuration);
     }
-
-    //public void StopRecord() {
-    //    Debug.Log("<b>VoiceRecord</b> StopRecord");
-
-    //    if (_state == EState.Enrolling)
-    //    {
-    //        string profileId = _profilesManagerRef.GetFirstProfileId();
-
-    //        WebClientManager.Instance.CreateEnrollment(profileId);
-    //    }
-
-    //    if (_state == EState.Identifying)
-    //    {
-    //        WebClientManager.Instance.Identification();
-    //    }
-
-    //    _startBtnImage.color = Color.white;
-    //    _state               = EState.Stopped;
-
-    //}
-
+      
+    // Called by the Exit button
     public void ExitApplication() {
         Debug.Log("<b>VoiceRecord</b> ExitApplication");
 
         Application.Quit();
     }
 
+    // Not used anymore
     public void ReplayLastSample() {
         Debug.Log("<b>VoiceRecord</b> ReplayLastSample");
 
         DebugHelper.Instance.HandleDebugInfo("Replaying last audio sample (" + SAMPLE_RATE_IDENTIFY + " sec.)");
-        _audioSourceRef.PlayOneShot(_audioSourceRef.clip);
-    }
-
-    private void DisplaySpectrum() {
-
-        float[] spectrum = new float[256];
-
-        AudioListener.GetSpectrumData(spectrum, 0, FFTWindow.Rectangular);
-
-        for (int i = 1; i < spectrum.Length - 1; i++)
-        {
-            //Debug.DrawLine(new Vector3(i - 1, spectrum[i] + 10, 0), new Vector3(i, spectrum[i + 1] + 10, 0), Color.red);
-            Debug.DrawLine(new Vector3(i - 1, Mathf.Log(spectrum[i - 1]) + 10, 2), new Vector3(i, Mathf.Log(spectrum[i]) + 10, 2), Color.cyan);
-            //Debug.DrawLine(new Vector3(Mathf.Log(i - 1), spectrum[i - 1] - 10, 1), new Vector3(Mathf.Log(i), spectrum[i] - 10, 1), Color.green);
-            //Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(spectrum[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(spectrum[i]), 3), Color.blue);
-        }
+        _audioSource.PlayOneShot(_audioSource.clip);
     }
 
 

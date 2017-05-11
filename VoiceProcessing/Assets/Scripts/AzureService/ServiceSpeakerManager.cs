@@ -3,8 +3,13 @@ using UnityEngine;
 
 namespace AzureServiceManagement {
 
+    /// <summary>
+    /// This class manages the requests of the SPEAKER RECOGNITION API
+    /// see : https://westus.dev.cognitive.microsoft.com/docs/services/563309b6778daf02acc0a508/operations/5645c725ca73070ee8845bd6
+    /// </summary>
     internal static class ServiceSpeakerManager {
 
+        // Event triggered 
         internal static System.Action<RequestConfig> OnRequestDone;
 
         private static RequestConfig requestConfig;

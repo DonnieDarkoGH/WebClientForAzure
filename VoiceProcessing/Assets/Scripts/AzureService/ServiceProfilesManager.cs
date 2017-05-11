@@ -4,6 +4,11 @@ using UnityEngine;
 
 namespace AzureServiceManagement {
 
+
+    /// <summary>
+    /// This class manages the requests of creating, deleting and getting profiles of the Speaker Recognition API
+    /// see : https://westus.dev.cognitive.microsoft.com/docs/services/563309b6778daf02acc0a508/operations/5645c3271984551c84ec6797
+    /// </summary>
     internal static class ServiceProfilesManager {
 
         internal static System.Action<RequestConfig> OnRequestDone;
@@ -107,6 +112,7 @@ namespace AzureServiceManagement {
 
             OnRequestDone(requestConfig);
         }
+
 
         internal static object PopulateProfileList(string json) {
 

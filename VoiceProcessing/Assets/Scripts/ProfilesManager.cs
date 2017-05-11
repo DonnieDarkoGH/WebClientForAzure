@@ -4,8 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using AzureServiceManagement;
 
+
+/// <summary>
+/// This class manages the group of users related to the Ocp-Apim-Subscription-Key of the user service
+/// </summary>
 public class ProfilesManager : MonoBehaviour {
 
+    // The gameobject prefab containing UI elements to display data
     [SerializeField] private  ProfileController       _profileControllerPrefab = null;
 
     [SerializeField] private  InputField              _inputFieldRef           = null;
@@ -43,9 +48,12 @@ public class ProfilesManager : MonoBehaviour {
         ClearChildren();
 
         DataProfileArray profileArray = DataProfileArray.CreateFromJSON(json);
+
+        int len = profileArray.DataProfiles.Length + 1;
+        System.Array.Resize(ref profileArray.DataProfiles, len);
+
         //Debug.Log(profileArray.ToString());
 
-        int len = profileArray.DataProfiles.Length;
         string id;
         string name;
 
@@ -95,9 +103,9 @@ public class ProfilesManager : MonoBehaviour {
             }
         }
 
-        Debug.LogError("No profile correspond to " + id);
+        Debug.Log("No profile correspond to " + id);
 
-        return null;
+        return children[len];
     }
 
     /*internal ProfileController GetProfileByName(string name) {
@@ -264,6 +272,11 @@ public class ProfilesManager : MonoBehaviour {
         if (PlayerPrefs.HasKey(id))
         {
             name = PlayerPrefs.GetString(id);
+        }
+
+        if(name.Length == 0)
+        {
+            name = "Unknown";
         }
 
         return name;
